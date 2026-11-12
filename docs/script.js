@@ -237,21 +237,75 @@ const projects=[
   }
 ];
 const $=id=>document.getElementById(id);
+const icon=(name,extra='')=>`<svg class="ui-icon ${extra}" aria-hidden="true" focusable="false"><use href="#icon-${name}"/></svg>`;
 function setPressed(b,active){b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}
-function renderRole(key){const r=roleData[key];$('roleDetail').innerHTML=`<p class="role-period">${r.date}</p><h3>${r.title}</h3><p>${r.summary}</p><ul>${r.bullets.map(t=>`<li>${t}</li>`).join('')}</ul>`;document.querySelectorAll('.role-tab').forEach(b=>setPressed(b,b.dataset.role===key));}
+const roleVisuals={fidelity:{icon:'building',themes:['Enterprise systems','Requirements & APIs','SQL validation']},hotelkey:{icon:'flow',themes:['Reporting roadmap','Integrations','Cross-functional delivery']},qa:{icon:'delivery',themes:['Quality assurance','Requirements','Deployment']},tcs:{icon:'data',themes:['Financial services','ETL testing','Application testing']}};
+function renderRole(key){
+ const r=roleData[key],visual=roleVisuals[key];
+ const more=r.bullets.length>2?`<details class="role-more"><summary>More about this role</summary><ul>${r.bullets.slice(2).map(t=>`<li>${t}</li>`).join('')}</ul></details>`:'';
+ $('roleDetail').innerHTML=`<div class="role-detail-heading"><span class="role-emblem">${icon(visual.icon)}</span><div><p class="role-period">${r.date}</p><h3>${r.title}</h3></div></div><div class="role-themes">${visual.themes.map(t=>`<span>${t}</span>`).join('')}</div><p>${r.summary}</p><ul>${r.bullets.slice(0,2).map(t=>`<li>${t}</li>`).join('')}</ul>${more}`;
+ document.querySelectorAll('.role-tab').forEach(b=>setPressed(b,b.dataset.role===key));
+}
 document.querySelectorAll('.role-tab').forEach(b=>b.addEventListener('click',()=>renderRole(b.dataset.role)));renderRole('fidelity');
+let revealObserver=null;
+function watchReveal(root=document){
+ if(!revealObserver||document.body.classList.contains('motion-paused'))return;
+ const targets=root.querySelectorAll('.section-heading,.fit-heading,.strength-card,.impact-grid,.project-card,.decision-lab,.timeline-panel,.skill-cluster,.proof-card,.credential,.contact-inner');
+ targets.forEach((el,i)=>{if(el.dataset.revealObserved)return;el.dataset.revealObserved='true';el.classList.add('reveal-target');el.style.setProperty('--reveal-delay',`${i%3*55}ms`);if(el.getBoundingClientRect().top>window.innerHeight*.96)el.classList.add('is-waiting');revealObserver.observe(el);});
+}
+const toolData={
+ jira:['Jira','Organize epics, user stories, acceptance criteria, backlog refinement, and Agile delivery priorities.'],
+ confluence:['Confluence','Maintain shared requirements and technical documentation so stakeholders, engineers, and QA work from the same context.'],
+ sql:['SQL','Investigate relational data, validate business rules, reconcile reporting differences, and trace source-to-target mappings.'],
+ powerbi:['Power BI','Build dashboards and reports for operational KPIs, feature adoption, and stakeholder decision-making.'],
+ snowflake:['Snowflake','Query enterprise datasets and validate data consistency across APIs and application interfaces.'],
+ oracle:['Oracle','Investigate data relationships and business rules with analytical SQL and multi-table joins.'],
+ api:['REST APIs','Define contracts, payloads, error scenarios, and integration workflows connecting enterprise systems.'],
+ swagger:['Swagger','Read API documentation and schemas to clarify request/response behavior and integration requirements.'],
+ postman:['Postman','Inspect requests and responses to support API testing and integration analysis.'],
+ bruno:['Bruno','Test API behavior and validate data exchange with engineering teams.'],
+ insomnia:['Insomnia','Troubleshoot API requests, validate contracts, and investigate integration issues.'],
+ servicenow:['ServiceNow','Support production deployments, incident management, change requests, and post-release validation.'],
+ datadog:['Datadog','Investigate application logs and system health to support production troubleshooting and root cause analysis.'],
+ splunk:['Splunk','Trace application and integration logs to investigate production issues.'],
+ aws:['AWS','Support event-driven integrations and application workflows with SNS, SQS, and Lambda.'],
+ github:['GitHub','Support technical collaboration, with GitHub Copilot used for analysis and documentation and recommendations validated before implementation.']
+};
+const visualNode=(name,label,sub='')=>`<div class="diagram-node">${icon(name)}<strong>${label}</strong>${sub?`<small>${sub}</small>`:''}</div>`;
+const diagramArrow=`<span class="diagram-arrow">${icon('arrow')}</span>`;
+function projectGraphic(p){
+ const themes={hub:['01','Requirement mapping','api'],reporting:['02','Enterprise reporting','chart'],invoice:['03','Configurable systems','code'],ota:['04','API integration','flow'],fiscal:['05','Data exchange','data'],pms:['06','Release readiness','delivery']};
+ const [number,theme,glyph]=themes[p.id];
+ let content='';
+ if(p.id==='hub')content=`<div class="artifact-sheet"><span>BUSINESS NEED</span><b>${icon('check')} Business rules</b><b>${icon('check')} User stories</b><b>${icon('check')} Acceptance</b></div>${diagramArrow}${visualNode('api','API contract','Request ↔ response')}${diagramArrow}<span class="diagram-end">${icon('data')}<small>Validate</small></span>`;
+ if(p.id==='reporting')content=`<div class="source-stack"><span>${icon('data')} Charges</span><span>${icon('data')} Payments</span><span>${icon('data')} Refunds</span></div>${diagramArrow}${visualNode('sql','SQL','Map & reconcile')}${diagramArrow}<div class="mini-dashboard"><span>REPORT OUTPUT</span><div class="mini-chart"><i></i><i></i><i></i><i></i></div><b>Business insight</b></div>`;
+ if(p.id==='invoice')content=`<div class="code-sheet"><span>${icon('code')} config.json</span><code>{<br>&nbsp; account: …,<br>&nbsp; template: …,<br>&nbsp; rules: …<br>}</code></div>${diagramArrow}<div class="invoice-sheet">${icon('requirements')}<b>Invoice</b><i></i><i></i><i></i><span>${icon('check')} Configured</span></div>`;
+ if(p.id==='ota')content=`<div class="source-stack channel-stack"><span>Booking.com</span><span>Expedia</span></div>${diagramArrow}${visualNode('building','Hotel platform','Reservation flow')}${diagramArrow}<div class="reservation-list"><span>${icon('check')} Receive</span><span>${icon('check')} Process</span><span>${icon('check')} Confirm</span></div>`;
+ if(p.id==='fiscal')content=`${visualNode('building','Operations','Source data')}${diagramArrow}${visualNode('api','REST APIs','Exchange & log')}${diagramArrow}${visualNode('data','Fiscal provider','Reporting')}`;
+ if(p.id==='pms')content=`<div class="release-route">${[['requirements','Define'],['code','Build'],['delivery','Validate'],['git','Release']].map(([n,t],i)=>`<div><span class="release-dot">${icon(n)}</span><b>${t}</b><small>0${i+1}</small></div>`).join('')}</div>`;
+ return `<div class="project-graphic graphic-${p.id}" aria-hidden="true"><div class="graphic-top"><span>${icon(glyph)} ${theme}</span><small>CASE / ${number}</small></div><div class="diagram-stage">${content}</div><div class="graphic-foot"><span class="graphic-dots"><i></i><i></i><i></i></span>Conceptual workflow<span>${p.id==='fiscal'?'Request → log → verify':'Business → systems → value'}</span></div></div>`;
+}
 let projectOpener;const dialog=$('projectDialog');
 function openProject(id,opener){const p=projects.find(x=>x.id===id);projectOpener=opener;$('dialogContent').innerHTML=`<p class="case-label">${p.label}</p><h2 id="caseTitle">${p.title}</h2>${p.blocks.map(([h,t])=>`<div class="case-block"><h4>${h}</h4><p>${t}</p></div>`).join('')}<p class="case-source">Scope and figures reflect my professional résumé. Diagrams show conceptual workflows.</p>`;dialog.showModal();}
 function renderProjects(filter='all'){
  const visible=projects.filter(p=>filter==='all'||p.category.includes(filter));
- $('projectGrid').innerHTML=visible.map(p=>`<article class="project-card"><div class="project-art ${p.bars?'art-data':'art-fidelity'}"><div class="art-label">${p.label}</div>${p.bars?'<div class="data-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>':`<div class="art-flow" aria-hidden="true">${p.flow.map(t=>`<span>${t}</span>`).join('<b>⇄</b>')}</div>`}<div class="art-bottom">BUSINESS CONTEXT → SYSTEMS → DELIVERY</div></div><div class="project-body"><div class="project-meta">${p.label}</div><h3>${p.title}</h3><p>${p.description}</p><div class="project-value"><span>VALUE CREATED</span><p>${p.value}</p></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join('')}</div><button class="project-open" data-project="${p.id}" aria-label="Explore case study: ${p.title}">Explore case study ↗</button></div></article>`).join('');
+ $('projectGrid').innerHTML=visible.map(p=>`<article class="project-card">${projectGraphic(p)}<div class="project-body"><div class="project-meta">${p.label}</div><h3>${p.title}</h3><p>${p.description}</p><div class="project-value"><span>VALUE CREATED</span><p>${p.value}</p></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join('')}</div><button class="project-open" data-project="${p.id}" aria-label="Explore case study: ${p.title}">Explore case study ${icon('arrow')}</button></div></article>`).join('');
+ watchReveal($('projectGrid'));
  $('projectCount').textContent=`Showing ${visible.length} of ${projects.length} projects`;
  document.querySelectorAll('.project-open').forEach(b=>b.addEventListener('click',()=>openProject(b.dataset.project,b)));
  document.querySelectorAll('[data-filter]').forEach(b=>setPressed(b,b.dataset.filter===filter));
 }
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>renderProjects(b.dataset.filter)));renderProjects();
 $('closeDialog').addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>projectOpener?.focus());dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-document.querySelectorAll('[data-skill]').forEach(b=>{b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>{document.querySelectorAll('[data-skill]').forEach(x=>setPressed(x,x===b));$('skillDetail').innerHTML=`<span class="skill-detail-icon" aria-hidden="true">✦</span><div><strong>${b.dataset.skill}</strong><p>${skillData[b.dataset.skill]}</p></div>`;});});
+document.querySelectorAll('[data-skill], [data-tool]').forEach(b=>{
+ b.setAttribute('aria-pressed','false');
+ b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-skill], [data-tool]').forEach(x=>setPressed(x,x===b));
+  const title=b.dataset.tool?toolData[b.dataset.tool][0]:b.textContent.trim();
+  const description=b.dataset.tool?toolData[b.dataset.tool][1]:skillData[b.dataset.skill];
+  $('skillDetail').innerHTML=`<span class="skill-detail-icon">${icon(b.dataset.tool||'spark')}</span><div><strong>${title}</strong><p>${description}</p></div>`;
+ });
+});
 function renderScenario(key){const s=scenarioData[key];$('scenarioDetail').innerHTML=`<h4>${s.title}</h4><ol>${s.steps.map(t=>`<li>${t}</li>`).join('')}</ol><div class="scenario-takeaway">${s.takeaway}</div>`;document.querySelectorAll('.decision-option').forEach(b=>setPressed(b,b.dataset.scenario===key));}
 document.querySelectorAll('.decision-option').forEach(b=>b.addEventListener('click',()=>renderScenario(b.dataset.scenario)));
 const themeButton=$('themeToggle');function applyTheme(dark){document.body.classList.toggle('dark',dark);themeButton.textContent=dark?'☀':'☾';themeButton.setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');themeButton.setAttribute('aria-pressed',String(dark));document.querySelector('meta[name="theme-color"]').content=dark?'#211e1a':'#fbf7ef';}
@@ -260,3 +314,31 @@ const menuButton=$('menuToggle'),nav=$('mainNav');function setMenu(open){nav.cla
 $('copyIntro').addEventListener('click',async()=>{const text='Abhinav Hingnekar — open to Technical Business Analyst, Business Systems Analyst, Systems Analyst, Product Analyst, and Integration Analyst opportunities. 12+ years across financial services and B2B SaaS, with requirements analysis, API integrations, SQL, stakeholder management, and cross-functional delivery. Dallas, TX. Contact: abhinav.hingnekar@gmail.com | https://www.linkedin.com/in/abhinav-hingnekar/';try{await navigator.clipboard.writeText(text);$('copyStatus').textContent='Introduction copied to clipboard.';}catch{$('copyStatus').textContent=text;const range=document.createRange();range.selectNodeContents($('copyStatus'));const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);}});
 
 renderScenario('api');
+
+// Reveal once, then stop observing. Content remains visible without JS or IntersectionObserver.
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+let userPaused=false;
+try{userPaused=localStorage.getItem('portfolio-motion')==='paused';}catch{}
+function updateMotion(){
+ const paused=userPaused||reducedMotion.matches;
+ document.body.classList.toggle('motion-paused',paused);
+ const control=$('motionToggle');control.hidden=false;control.disabled=reducedMotion.matches;
+ control.setAttribute('aria-pressed',String(paused));
+ control.innerHTML=reducedMotion.matches?'Reduced motion':userPaused?'Resume motion <span aria-hidden="true">▷</span>':'Pause motion <span aria-hidden="true">Ⅱ</span>';
+ if(paused){
+  revealObserver?.disconnect();revealObserver=null;
+  document.querySelectorAll('.is-waiting').forEach(el=>el.classList.remove('is-waiting'));
+ }else if('IntersectionObserver' in window){
+  revealObserver?.disconnect();
+  revealObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+   if(entry.isIntersecting){entry.target.classList.remove('is-waiting');revealObserver.unobserve(entry.target);}
+  }),{threshold:.08,rootMargin:'0px 0px 16px 0px'});
+  document.querySelectorAll('[data-reveal-observed]').forEach(el=>delete el.dataset.revealObserved);
+  watchReveal();
+ }
+}
+$('motionToggle').addEventListener('click',()=>{userPaused=!userPaused;try{localStorage.setItem('portfolio-motion',userPaused?'paused':'running');}catch{}updateMotion();});
+reducedMotion.addEventListener('change',updateMotion);
+document.addEventListener('visibilitychange',()=>document.body.classList.toggle('page-hidden',document.hidden));
+document.addEventListener('focusin',e=>e.target.closest('.is-waiting')?.classList.remove('is-waiting'));
+updateMotion();
