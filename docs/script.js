@@ -244,13 +244,18 @@ function renderRole(key){
  const r=roleData[key],visual=roleVisuals[key];
  const more=r.bullets.length>2?`<details class="role-more"><summary>More about this role</summary><ul>${r.bullets.slice(2).map(t=>`<li>${t}</li>`).join('')}</ul></details>`:'';
  $('roleDetail').innerHTML=`<div class="role-detail-heading"><span class="role-emblem">${icon(visual.icon)}</span><div><p class="role-period">${r.date}</p><h3>${r.title}</h3></div></div><div class="role-themes">${visual.themes.map(t=>`<span>${t}</span>`).join('')}</div><p>${r.summary}</p><ul>${r.bullets.slice(0,2).map(t=>`<li>${t}</li>`).join('')}</ul>${more}`;
- document.querySelectorAll('.role-tab').forEach(b=>setPressed(b,b.dataset.role===key));
+ document.querySelectorAll('.role-tab').forEach(b=>{setPressed(b,b.dataset.role===key);b.closest('.career-card')?.classList.toggle('active',b.dataset.role===key);});
 }
-document.querySelectorAll('.role-tab').forEach(b=>b.addEventListener('click',()=>renderRole(b.dataset.role)));renderRole('fidelity');
+document.querySelectorAll('.role-tab').forEach(b=>b.addEventListener('click',()=>{
+ renderRole(b.dataset.role);$('experienceDetails').open=true;
+ document.querySelectorAll('.role-tab').forEach(x=>x.setAttribute('aria-expanded',String(x===b)));
+}));
+$('experienceDetails').addEventListener('toggle',()=>document.querySelectorAll('.role-tab').forEach(b=>b.setAttribute('aria-expanded',String($('experienceDetails').open&&b.classList.contains('active')))));
+renderRole('fidelity');
 let revealObserver=null;
 function watchReveal(root=document){
  if(!revealObserver||document.body.classList.contains('motion-paused'))return;
- const targets=root.querySelectorAll('.section-heading,.fit-heading,.strength-card,.impact-grid,.project-card,.decision-lab,.timeline-panel,.skill-cluster,.proof-card,.credential,.contact-inner');
+ const targets=root.querySelectorAll('.section-heading,.fit-heading,.strength-card,.impact-grid,.project-card,.decision-lab,.career-card,.approach-summary,.skill-cluster,.proof-card,.credential,.contact-inner');
  targets.forEach((el,i)=>{if(el.dataset.revealObserved)return;el.dataset.revealObserved='true';el.classList.add('reveal-target');el.style.setProperty('--reveal-delay',`${i%3*55}ms`);if(el.getBoundingClientRect().top>window.innerHeight*.96)el.classList.add('is-waiting');revealObserver.observe(el);});
 }
 const toolData={
@@ -287,15 +292,32 @@ function projectGraphic(p){
 }
 let projectOpener;const dialog=$('projectDialog');
 function openProject(id,opener){const p=projects.find(x=>x.id===id);projectOpener=opener;$('dialogContent').innerHTML=`<p class="case-label">${p.label}</p><h2 id="caseTitle">${p.title}</h2>${p.blocks.map(([h,t])=>`<div class="case-block"><h4>${h}</h4><p>${t}</p></div>`).join('')}<p class="case-source">Scope and figures reflect my professional résumé. Diagrams show conceptual workflows.</p>`;dialog.showModal();}
+const projectSummaries={
+ hub:{type:'FIDELITY / API INTEGRATION',title:'The Hub. Connected workflows.',problem:'Mobile workflows needed consistent backend data.',role:'Requirements, API contracts & SQL validation.',systems:['REST APIs','Snowflake','Oracle'],value:'Defined behavior. Validated business rules.'},
+ reporting:{type:'HOTELKEY / ENTERPRISE REPORTING',title:'Reporting that answers the business.',problem:'Customer questions spanned operational datasets.',role:'Reporting roadmap, data mapping & team delivery.',systems:['SQL / MySQL','ETL','Data warehousing'],value:'More accurate, accessible reporting.'},
+ invoice:{type:'HOTELKEY / INVOICE FRAMEWORK',title:'One framework. Hotel-scale invoicing.',problem:'Invoice needs varied across corporate accounts.',role:'Built a JSON + REST invoice framework.',systems:['JSON','REST APIs'],value:'20K+ corporate accounts. 1,400+ hotels.'},
+ ota:{type:'HOTELKEY / BOOKING INTEGRATIONS',title:'Reservations, connected.',problem:'Bookings needed to flow into hotel operations.',role:'Implemented Booking.com & Expedia integrations.',systems:['Booking.com','Expedia','OTA integrations'],value:'80% increase in automated processing & bookings.'},
+ fiscal:{type:'HOTELKEY / FISCAL INTEGRATIONS',title:'Fiscal reporting, automated.',problem:'Operations needed data exchange with fiscal providers.',role:'Led provider integrations & data validation.',systems:['REST APIs','Data exchange','Request logging'],value:'Automated workflows supporting compliance.'},
+ pms:{type:'HOTELKEY / ENTERPRISE DELIVERY',title:'Enterprise systems. Ready for release.',problem:'Large customers needed coordinated rollout & onboarding.',role:'Led requirements through release & support.',systems:['PMS','SDLC','QA'],value:'$14M recurring annual revenue from implementations.'}
+};
+let allProjectsExpanded=false;
+let currentProjectFilter='all';
 function renderProjects(filter='all'){
- const visible=projects.filter(p=>filter==='all'||p.category.includes(filter));
- $('projectGrid').innerHTML=visible.map(p=>`<article class="project-card">${projectGraphic(p)}<div class="project-body"><div class="project-meta">${p.label}</div><h3>${p.title}</h3><p>${p.description}</p><div class="project-value"><span>VALUE CREATED</span><p>${p.value}</p></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join('')}</div><button class="project-open" data-project="${p.id}" aria-label="Explore case study: ${p.title}">Explore case study ${icon('arrow')}</button></div></article>`).join('');
+ currentProjectFilter=filter;
+ const matching=projects.filter(p=>filter==='all'||p.category.includes(filter));
+ const visible=filter==='all'&&!allProjectsExpanded?matching.slice(0,3):matching;
+ $('projectGrid').innerHTML=visible.map(p=>{const summary=projectSummaries[p.id];return `<article class="project-card scan-project">${projectGraphic(p)}<div class="project-body"><div class="project-meta">${summary.type}</div><h3>${summary.title}</h3><dl class="project-facts"><div><dt>Problem</dt><dd>${summary.problem}</dd></div><div><dt>My role</dt><dd>${summary.role}</dd></div></dl><div class="project-systems"><span>Systems</span><div class="tags">${summary.systems.map(t=>`<span>${t}</span>`).join('')}</div></div><div class="project-outcome">${icon('delivery')}<div><span>VALUE CREATED</span><p>${summary.value}</p></div></div><button class="project-open" data-project="${p.id}" aria-label="Explore case study: ${p.title}">View case study ${icon('arrow')}</button></div></article>`;}).join('');
  watchReveal($('projectGrid'));
- $('projectCount').textContent=`Showing ${visible.length} of ${projects.length} projects`;
+ $('projectCount').textContent=filter==='all'&&!allProjectsExpanded?`3 featured · ${projects.length} projects total`:`${visible.length} ${visible.length===1?'project':'projects'}`;
  document.querySelectorAll('.project-open').forEach(b=>b.addEventListener('click',()=>openProject(b.dataset.project,b)));
  document.querySelectorAll('[data-filter]').forEach(b=>setPressed(b,b.dataset.filter===filter));
+ $('projectMore').hidden=filter!=='all';
+ $('projectMore').setAttribute('aria-expanded',String(allProjectsExpanded));
+ $('projectMore').innerHTML=allProjectsExpanded?`Show featured projects ${icon('arrow')}`:`Show all ${projects.length} projects ${icon('arrow')}`;
 }
-document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>renderProjects(b.dataset.filter)));renderProjects();
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>renderProjects(b.dataset.filter)));
+$('projectMore').addEventListener('click',()=>{allProjectsExpanded=!allProjectsExpanded;renderProjects(currentProjectFilter);});
+renderProjects();
 $('closeDialog').addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>projectOpener?.focus());dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 document.querySelectorAll('[data-skill], [data-tool]').forEach(b=>{
  b.setAttribute('aria-pressed','false');
@@ -303,6 +325,7 @@ document.querySelectorAll('[data-skill], [data-tool]').forEach(b=>{
   document.querySelectorAll('[data-skill], [data-tool]').forEach(x=>setPressed(x,x===b));
   const title=b.dataset.tool?toolData[b.dataset.tool][0]:b.textContent.trim();
   const description=b.dataset.tool?toolData[b.dataset.tool][1]:skillData[b.dataset.skill];
+  $('skillDetail').hidden=false;
   $('skillDetail').innerHTML=`<span class="skill-detail-icon">${icon(b.dataset.tool||'spark')}</span><div><strong>${title}</strong><p>${description}</p></div>`;
  });
 });
