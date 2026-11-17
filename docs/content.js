@@ -61,10 +61,64 @@ export const roleData = {
     "date": "March 2018 — August 2024 · Dallas, TX",
     "summary": "Owned the enterprise reporting roadmap and led cross-functional delivery across hospitality reporting, integrations, and implementations.",
     "bullets": [
-      "Partnered with Hilton, IHG, and Extended Stay America on reporting requirements; guided developers on SQL logic and data relationships.",
-      "Built a JSON and REST API invoice framework supporting 20K+ corporate accounts across 1,400+ hotels.",
-      "Delivered enterprise PMS implementations generating $14M in recurring annual revenue; implemented Booking.com and Expedia integrations.",
-      "Designed data warehousing and ETL solutions, led fiscal integrations, and implemented AWS SNS, SQS, and Lambda workflows."
+      "Owned the product roadmap for HotelKey’s enterprise reporting module, partnering with customers and engineering teams to define requirements, prioritize enhancements, and deliver scalable reporting solutions.",
+      "Collaborated with Hilton, IHG, and Extended Stay America to translate business needs into functional specifications, user stories, and reporting use cases.",
+      "Led developers and QA engineers, aligning priorities, resolving dependencies, and driving cross-functional delivery from requirements through production release.",
+      "Designed report layouts and columns by analyzing relational database schemas, identifying data sources, and translating business requirements into analytical reports.",
+      "Served as the functional SME for enterprise reporting, guiding developers on table selection, data relationships, SQL logic, and report design using in-depth RDBMS knowledge.",
+      "Used SQL and MySQL analytical queries and multi-table joins to validate business rules, troubleshoot data inconsistencies, and support reporting and product development.",
+      "Validated and reconciled data across APIs, relational databases, and application interfaces to ensure accurate data movement and business rule compliance.",
+      "Designed end-to-end REST API integration workflows, request/response logging, and data exchange processes for enterprise hospitality applications.",
+      "Led B2B SaaS integrations with global providers using REST APIs, automating fiscal reporting and supporting regulatory compliance across hospitality platforms.",
+      "Designed and implemented data warehousing and ETL solutions to consolidate operational systems, improve reporting accuracy, and increase enterprise data accessibility.",
+      "Built a dynamic invoice framework using JSON configurations and REST APIs, supporting 20K+ corporate accounts across 1,400+ hotels.",
+      "Delivered enterprise PMS implementations generating $14M in recurring annual revenue, supporting large-scale customer onboarding and solution deployment.",
+      "Implemented Booking.com and Expedia OTA integrations, increasing automated reservation processing and bookings by 80%.",
+      "Performed business process mapping, system impact analysis, workflow optimization, and gap analysis to support enterprise product enhancements and data-driven decisions.",
+      "Authored epics, user stories, acceptance criteria, and technical documentation in Jira and Confluence while facilitating Agile ceremonies and backlog refinement.",
+      "Used Splunk to analyze application logs, investigate production issues, troubleshoot integrations, and support root cause analysis.",
+      "Implemented AWS SNS, SQS, and Lambda to support scalable event-driven integrations and enterprise application workflows.",
+      "Led end-to-end SDLC activities from requirements gathering and solution design through testing, deployment, and post-production support."
+    ],
+    "bulletGroups": [
+      {
+        "title": "Product ownership & stakeholder leadership",
+        "indices": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "title": "Enterprise reporting & data analysis",
+        "indices": [
+          3,
+          4,
+          5,
+          6,
+          9
+        ]
+      },
+      {
+        "title": "APIs, integrations & platform solutions",
+        "indices": [
+          7,
+          8,
+          10,
+          12,
+          16
+        ]
+      },
+      {
+        "title": "Delivery, process improvement & operations",
+        "indices": [
+          11,
+          13,
+          14,
+          15,
+          17
+        ]
+      }
     ]
   },
   "qa": {

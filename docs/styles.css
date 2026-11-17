@@ -151,3 +151,8 @@ h1>span { display: block; color: #c6d6dc; }
 
 body.panel-open { overflow: hidden!important; }
 .close-button { width: 44px; height: 44px; }
+
+/* Group longer responsibilities so the expanded timeline stays scannable. */
+.responsibility-group + .responsibility-group { margin-top: 24px; padding-top: 19px; border-top: 1px solid var(--soft-border); }
+.responsibility-group h4 { margin: 0 0 12px; font-family: var(--font); font-size: 13px; line-height: 1.6; font-weight: 700; color: var(--accent); }
+.responsibility-group ul { margin-top: 0; }
