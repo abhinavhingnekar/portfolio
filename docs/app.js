@@ -138,7 +138,7 @@ $('careerTimeline').innerHTML = Object.entries(roleMeta).map(([key,meta], index)
   const responsibilityList=role.bulletGroups
     ? role.bulletGroups.map(group=>`<section class="responsibility-group"><h4>${group.title}</h4><ul>${group.indices.map(index=>`<li>${role.bullets[index]}</li>`).join('')}</ul></section>`).join('')
     : `<ul>${role.bullets.map(bullet=>`<li>${bullet}</li>`).join('')}</ul>`;
-  const responsibilityLabel=role.bulletGroups?`Responsibilities & achievements · ${role.bullets.length} points`:'Responsibilities & achievements';
+  const responsibilityLabel='Responsibilities & achievements';
   return `<article class="timeline-item"><span class="timeline-node" aria-hidden="true">${icon(meta.icon)}</span><div class="timeline-date">${meta.period}</div><div class="career-card stagger-card" style="--card-index:${index}"><div class="company-line"><span class="company-code" aria-hidden="true">${meta.code}</span><span>${meta.company}</span>${key==='fidelity'?'<span class="contract-label">CONTRACT</span>':''}</div><h3>${meta.title}</h3><p>${role.summary}</p><div class="career-impact">${icon('delivery')}<span>${meta.impact}</span></div><div class="tag-list">${meta.tools.map(tool=>`<span>${tool}</span>`).join('')}</div><details class="career-details"><summary>${responsibilityLabel}</summary><p class="context-note">${role.date}</p>${responsibilityList}</details></div></article>`;
 }).join('');
 
