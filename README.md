@@ -25,10 +25,12 @@ No framework, build step, contact backend, or runtime package dependencies are r
 ## Navigation and accessibility
 
 - Links such as `#experience` and `#projects/hub` open panels directly.
-- Browser Back and Forward restore the corresponding view.
+- All seven main sections form a continuous vertical story, with tabs as section shortcuts.
+- The active tab, section counter, and URL follow the reader’s scroll position without adding extra history entries.
+- Browser Back and Forward restore the corresponding view and reading position.
 - Close or Escape returns to the home screen. Case studies also provide an All projects action.
 - Native modal dialog behavior contains keyboard focus; closing restores focus to the initiating home control.
-- Panels have independent scrolling. Mobile layouts allow comfortable page scrolling on the landing screen.
+- The reading surface scrolls internally from About through Contact. Expanded case studies remain a focused view with a return path to the project gallery. Mobile layouts allow comfortable landing-page scrolling.
 - Motion can be paused. System reduced-motion preferences suppress animation and transition delays.
 - Professional content is available through a basic no-JavaScript fallback.
 
@@ -36,7 +38,7 @@ No framework, build step, contact backend, or runtime package dependencies are r
 
 Career and project source data are retained from the existing portfolio. The FiskalTrust/Germany context and high-level technical considerations are grounded in the supplied redesign brief and earlier portfolio reference. No new metrics, employment, degrees, photos, or third-party company logos have been invented.
 
-The résumé PDF remains excluded under the user's earlier privacy instruction. Functional résumé-request links are retained in the landing and Contact views. Public PDF download can be added only after approval to publish that document.
+The résumé PDF remains excluded from the repository. The landing and Contact résumé actions open the public Google Drive URL supplied by the user in a new tab.
 
 ## Assets
 

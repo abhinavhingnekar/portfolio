@@ -14,86 +14,148 @@ let homeOpener = null;
 let closeRequested = false;
 let closeFallback;
 const scrollPositions = new Map();
+let storyScrollTop=0;
+let programmaticGoal=null;
+let navigationInProgress=false;
+let scrollFrame=0;
+let scrollIdleTimer;
+let scrollGuardTimer;
 
-// Shared routing makes panel links, direct URLs, and browser history agree.
+// The seven sections form one reading surface. Cases are a focused detail view.
 function parseRoute(value) {
-  const raw = value.replace(/^#/, '');
-  const [section, id, ...extra] = raw.split('/');
-  if (extra.length) return '';
-  if (section === 'projects' && id && projects.some(project => project.id === id)) return `projects/${id}`;
-  if (id) return '';
-  return sections.includes(section) ? section : '';
+  const raw=value.replace(/^#/,'');
+  const [section,id,...extra]=raw.split('/');
+  if(extra.length)return '';
+  if(section==='projects'&&id&&projects.some(project=>project.id===id))return `projects/${id}`;
+  if(id)return '';
+  return sections.includes(section)?section:'';
 }
-function locationRoute() { try { return parseRoute(decodeURIComponent(location.hash)); } catch { return ''; } }
-const baseURL = () => `${location.pathname}${location.search}`;
-const wait = duration => new Promise(resolve => setTimeout(resolve, reducedMotion.matches ? 0 : duration));
-
-function navigate(route) {
-  if (closeRequested) return;
-  const target = parseRoute(route);
-  if (!target || target === currentRoute) return;
-  if (!dialog.open) homeOpener = document.activeElement;
-  history.pushState({careerHub:true, depth:(history.state?.careerHub ? history.state.depth : 0)+1}, '', `${baseURL()}#${target}`);
+function locationRoute(){try{return parseRoute(decodeURIComponent(location.hash));}catch{return '';}}
+const baseURL=()=>`${location.pathname}${location.search}`;
+const wait=duration=>new Promise(resolve=>setTimeout(resolve,reducedMotion.matches?0:duration));
+const isCase=route=>route.includes('/');
+function saveReadingPosition(){
+  if(!dialog.open||!currentRoute||closeRequested)return;
+  const position=scroller.scrollTop;
+  scrollPositions.set(currentRoute,position);
+  if(!isCase(currentRoute))storyScrollTop=position;
+  history.replaceState({...history.state,scrollTop:position,viewMode:isCase(currentRoute)?'case':'story'},'',location.href);
+}
+function updateSectionChrome(section,caseView=false){
+  $('panelTitle').textContent=caseView?'Project / Case study':names[section];
+  $('panelCounter').textContent=`${String(sections.indexOf(section)+1).padStart(2,'0')} / 07`;
+  $('readerHint').textContent=caseView?'CASE STUDY · RETURN TO PROJECTS':'SCROLL TO EXPLORE · ABOUT → CONTACT';
+  document.querySelectorAll('[data-route]').forEach(link=>{
+    if(link.dataset.route===section)link.setAttribute('aria-current','page');
+    else link.removeAttribute('aria-current');
+  });
+  const tab=document.querySelector('.panel-navigation [aria-current]');
+  if(tab){const bar=tab.parentElement;bar.scrollLeft+=tab.getBoundingClientRect().left-bar.getBoundingClientRect().left-(bar.clientWidth-tab.offsetWidth)/2;}
+}
+function syncStoryScroll(){
+  if(!dialog.open||!currentRoute||isCase(currentRoute)||navigationInProgress||programmaticGoal!==null||closeRequested)return;
+  const top=scroller.getBoundingClientRect().top;
+  const threshold=top+Math.min(120,scroller.clientHeight*.18);
+  let active=sections[0];
+  for(const section of sections){if($(section).getBoundingClientRect().top<=threshold)active=section;else break;}
+  if(scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop<3)active='contact';
+  storyScrollTop=scroller.scrollTop;
+  if(active!==currentRoute){
+    currentRoute=active;
+    updateSectionChrome(active);
+    // Passive reading replaces this entry instead of filling browser history.
+    history.replaceState({...history.state,scrollTop:scroller.scrollTop,viewMode:'story'},'',`${baseURL()}#${active}`);
+  }
+}
+function finishProgrammaticScroll(){
+  clearTimeout(scrollGuardTimer);
+  programmaticGoal=null;navigationInProgress=false;
+  syncStoryScroll();saveReadingPosition();
+}
+function setScrollPosition(value,smooth=false){
+  clearTimeout(scrollGuardTimer);
+  programmaticGoal=Math.max(0,Math.min(value,scroller.scrollHeight-scroller.clientHeight));
+  scroller.scrollTo({top:programmaticGoal,behavior:smooth&&!reducedMotion.matches?'smooth':'instant'});
+  if(!smooth||reducedMotion.matches||Math.abs(scroller.scrollTop-programmaticGoal)<2){
+    requestAnimationFrame(finishProgrammaticScroll);
+  }else scrollGuardTimer=setTimeout(finishProgrammaticScroll,1400);
+}
+function navigate(route){
+  if(closeRequested)return;
+  const target=parseRoute(route);if(!target)return;
+  if(target===currentRoute&&isCase(target))return;
+  saveReadingPosition();
+  if(!dialog.open)homeOpener=document.activeElement;
+  if(target!==currentRoute)history.pushState({careerHub:true,depth:(history.state?.careerHub?history.state.depth:0)+1},'',`${baseURL()}#${target}`);
   applyRoute(target);
 }
-function finishClose() {
+function finishClose(){
   clearTimeout(closeFallback);closeRequested=false;
-  history.replaceState({careerHub:true,depth:0},'',baseURL());
-  applyRoute('');
+  history.replaceState({careerHub:true,depth:0},'',baseURL());applyRoute('');
 }
-function closeHub() {
-  if ((!dialog.open && !currentRoute) || closeRequested) return;
-  const depth=history.state?.careerHub ? history.state.depth : 0;
-  if(depth>0 && history.length>1){
-    closeRequested=true;
-    history.go(-Math.min(depth,history.length-1));
-    // A capped or externally modified history stack must never strand an open panel.
+function closeHub(){
+  if((!dialog.open&&!currentRoute)||closeRequested)return;
+  saveReadingPosition();
+  const depth=history.state?.careerHub?history.state.depth:0;
+  if(depth>0&&history.length>1){
+    closeRequested=true;history.go(-Math.min(depth,history.length-1));
     closeFallback=setTimeout(()=>{if(closeRequested)finishClose();},400);
   }else finishClose();
 }
-async function applyRoute(route) {
-  const ticket = ++transition;
-  const previousRoute = currentRoute;
-  if (previousRoute) scrollPositions.set(previousRoute, scroller.scrollTop);
-  currentRoute = route;
-  if (!route) {
-    dialog.classList.add('is-closing');
-    document.body.classList.remove('panel-open');
-    await wait(180);
-    if (ticket !== transition) return;
-    if (dialog.open) dialog.close();
-    dialog.classList.remove('is-closing');
-    document.querySelectorAll('[data-panel]').forEach(view => { view.hidden = true; });
-    document.querySelectorAll('.home-navigation [data-route]').forEach(link => link.removeAttribute('aria-current'));
-    (homeOpener?.isConnected && homeOpener!==document.body ? homeOpener : $('homeTitle')).focus({preventScroll:true});
+async function applyRoute(route,{restore=false}={}){
+  const ticket=++transition;
+  const previousRoute=currentRoute;
+  const wasOpen=dialog.open;
+  const wasCase=isCase(previousRoute);
+  const caseView=isCase(route);
+  if(previousRoute){scrollPositions.set(previousRoute,scroller.scrollTop);if(!wasCase)storyScrollTop=scroller.scrollTop;}
+  navigationInProgress=true;clearTimeout(scrollGuardTimer);programmaticGoal=null;
+  currentRoute=route;
+  if(!route){
+    dialog.classList.add('is-closing');document.body.classList.remove('panel-open');
+    await wait(180);if(ticket!==transition)return;
+    if(dialog.open)dialog.close();dialog.classList.remove('is-closing');
+    document.querySelectorAll('[data-panel]').forEach(view=>{view.hidden=true;});
+    document.querySelectorAll('.home-navigation [data-route]').forEach(link=>link.removeAttribute('aria-current'));
+    navigationInProgress=false;
+    (homeOpener?.isConnected&&homeOpener!==document.body?homeOpener:$('homeTitle')).focus({preventScroll:true});
     return;
   }
-  const section = route.split('/')[0];
-  if (dialog.open) { scroller.classList.add('is-switching'); await wait(110); }
-  if (ticket !== transition) return;
+  if(wasOpen&&(wasCase||caseView)){scroller.classList.add('is-switching');await wait(110);}
+  if(ticket!==transition)return;
   dialog.classList.remove('is-closing');
-  const caseId = route.split('/')[1];
-  if (caseId) renderCaseStudy(caseId);
-  document.querySelectorAll('[data-panel]').forEach(view => { view.hidden = view.dataset.panel !== (caseId ? 'case-study' : section); });
-  $('panelTitle').textContent = caseId ? 'Project / Case study' : names[section];
-  $('panelCounter').textContent = `${String(sections.indexOf(section)+1).padStart(2,'0')} / 07`;
-  document.querySelectorAll('[data-route]').forEach(link => {
-    if (link.dataset.route === section) link.setAttribute('aria-current','page');
-    else link.removeAttribute('aria-current');
+  const section=route.split('/')[0];
+  if(caseView)renderCaseStudy(route.split('/')[1]);
+  document.querySelectorAll('[data-panel]').forEach(view=>{
+    view.hidden=caseView?view.dataset.panel!=='case-study':view.dataset.panel==='case-study';
   });
-  if (!dialog.open) dialog.showModal();
-  const tab=document.querySelector('.panel-navigation [aria-current]');
-  if(tab){const bar=tab.parentElement;bar.scrollLeft+=tab.getBoundingClientRect().left-bar.getBoundingClientRect().left-(bar.clientWidth-tab.offsetWidth)/2;}
-  document.body.classList.add('panel-open');
-  scroller.scrollTop = scrollPositions.get(route) || 0;
+  dialog.classList.toggle('story-mode',!caseView);
+  if(!dialog.open)dialog.showModal();
+  document.body.classList.add('panel-open');updateSectionChrome(section,caseView);
   scroller.classList.remove('is-switching');
-  const view = document.querySelector('[data-panel]:not([hidden])');
-  view.classList.remove('is-entering');
-  void view.offsetWidth;
-  view.classList.add('is-entering');
-  const heading = view.querySelector('h2');
-  if (heading) { heading.tabIndex = -1; heading.focus({preventScroll:true}); }
+  const view=caseView?$('caseStudy'):$(section);
+  if(!wasOpen||wasCase||caseView){view.classList.remove('is-entering');void view.offsetWidth;view.classList.add('is-entering');}
+  let destination;
+  if(restore&&Number.isFinite(history.state?.scrollTop))destination=history.state.scrollTop;
+  else if(caseView)destination=0;
+  else destination=view.offsetTop;
+  const heading=view.querySelector('h2');
+  if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
+  setScrollPosition(destination,!restore&&wasOpen&&!wasCase&&!caseView);
 }
+scroller.addEventListener('scroll',()=>{
+  if(!scrollFrame)scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;syncStoryScroll();});
+  clearTimeout(scrollIdleTimer);
+  scrollIdleTimer=setTimeout(()=>{if(!navigationInProgress&&programmaticGoal===null)saveReadingPosition();},160);
+},{passive:true});
+scroller.addEventListener('scrollend',()=>{
+  if(programmaticGoal!==null){if(Math.abs(scroller.scrollTop-programmaticGoal)<3)finishProgrammaticScroll();}
+  else {syncStoryScroll();saveReadingPosition();}
+});
+function interruptScroll(){if(programmaticGoal!==null){clearTimeout(scrollGuardTimer);programmaticGoal=null;navigationInProgress=false;syncStoryScroll();}}
+scroller.addEventListener('wheel',interruptScroll,{passive:true});
+scroller.addEventListener('touchstart',interruptScroll,{passive:true});
+scroller.addEventListener('keydown',event=>{if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '].includes(event.key))interruptScroll();});
 
 document.addEventListener('click', event => {
   const home = event.target.closest('[data-home]');
@@ -120,9 +182,10 @@ dialog.addEventListener('click', event => {
   const rect = dialog.querySelector('.panel-shell').getBoundingClientRect();
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeHub();
 });
-window.addEventListener('popstate',() => {if(closeRequested)finishClose();else applyRoute(locationRoute());});
+window.addEventListener('popstate',() => {if(closeRequested)finishClose();else applyRoute(locationRoute(),{restore:true});});
 window.addEventListener('hashchange',() => { const route = locationRoute(); if (route !== currentRoute) applyRoute(route); });
 $('backToProjects').addEventListener('click',() => {
+  saveReadingPosition();
   if (history.state?.careerHub && history.state.depth > 1) history.back();
   else navigate('projects');
 });

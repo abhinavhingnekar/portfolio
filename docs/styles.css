@@ -156,3 +156,11 @@ body.panel-open { overflow: hidden!important; }
 .responsibility-group + .responsibility-group { margin-top: 24px; padding-top: 19px; border-top: 1px solid var(--soft-border); }
 .responsibility-group h4 { margin: 0 0 12px; font-family: var(--font); font-size: 13px; line-height: 1.6; font-weight: 700; color: var(--accent); }
 .responsibility-group ul { margin-top: 0; }
+/* The landing starts with the name; the reader flows continuously from About to Contact. */
+.home-content { max-width: 1100px; }
+.home-content>h1 { margin-top: 0; }
+.hub-dialog.story-mode .panel-view:not([hidden]) { display: block; }
+.hub-dialog.story-mode .panel-view+.panel-view:not([hidden]) { border-top: 1px solid var(--soft-border); }
+.hub-dialog.story-mode .panel-view { scroll-margin-top: 0; }
+.hub-dialog.story-mode .panel-view:last-child { padding-bottom: 65px; }
+.panel-scroller { position: relative; overflow-anchor: none; }

@@ -28,3 +28,11 @@ Verified in headless Chrome against a loopback HTTP server mounted at `/portfoli
 - FiskalTrust/Germany narrative is high-level context supplied in the brief and earlier reference, separate from the retained original project records.
 - `node --check` passed for both JavaScript modules.
 - No third-party template source, framework, package dependencies, or company-logo assets added.
+
+## Continuous-reader update
+
+- Removed the duplicate center AH mark; the landing content now starts with the name.
+- All seven main sections remain visible in one internally scrolling story. Tabs are shortcuts, and active section labels follow scrolling without adding browser history entries.
+- Case-study Back/Forward navigation restores the story's reading position; case details remain a separate focused view.
+- Fresh-page browser checks passed at desktop, tablet, and mobile sizes from 320 to 1440 pixels, including tab jumps, deep links, Escape, reduced motion, and absence of horizontal overflow or runtime errors.
+- Both résumé actions open the user-supplied public Google Drive URL in a new tab. An anonymous check returned HTTP 200 with the résumé's Google Drive title. The PDF remains excluded from the repository.
